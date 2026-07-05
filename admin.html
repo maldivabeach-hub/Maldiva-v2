@@ -167,7 +167,6 @@
                 <button onclick="window.switchAdminSubTab('reservations')" id="admin-subtab-btn-res" class="py-3 px-4 font-bold text-xs uppercase border-b-2 border-maldiva-orange text-maldiva-orange flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-list-check"></i><span>Demandes</span></button>
                 <button onclick="window.switchAdminSubTab('loyalty')" id="admin-subtab-btn-loyalty" class="py-3 px-4 font-bold text-xs uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-star"></i><span>Fidélité / زبائن أوفياء</span></button>
                 <button onclick="window.switchAdminSubTab('settings')" id="admin-subtab-btn-settings" class="py-3 px-4 font-bold text-xs uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-image"></i><span>Images & Tarifs</span></button>
-                <button onclick="window.switchAdminSubTab('parasols')" id="admin-subtab-btn-parasols" class="py-3 px-4 font-bold text-xs uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-umbrella-beach"></i><span>Parasols / المظلات</span></button>
                 <a href="orders.html" class="py-3 px-4 font-bold text-xs uppercase border-b-2 border-transparent text-gray-500 hover:text-maldiva-teal flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-utensils"></i><span>Restaurant (Externe)</span></a>
             </div>
 
@@ -259,30 +258,12 @@
                 </div>
             </div>
 
-            <div id="admin-subview-parasols" class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hidden space-y-6">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h4 class="serif-title text-xl font-bold text-maldiva-dark">Gestion des Parasols / إدارة المظلات</h4>
-                        <p class="text-xs text-gray-500">Gérez l'attribution des parasols (A01 à F14).</p>
-                    </div>
-                    <button onclick="window.generateQRCodes()" class="bg-maldiva-teal hover:bg-maldiva-dark text-white text-[10px] font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"><i class="fa-solid fa-qrcode"></i> QR Codes</button>
-                </div>
-                
-                <div class="flex gap-4 mb-2">
-                    <div class="flex items-center gap-1.5 text-xs"><span class="w-3 h-3 rounded-full bg-green-200 border border-green-400"></span> <span class="font-bold text-gray-600">Libre (فارغة)</span></div>
-                    <div class="flex items-center gap-1.5 text-xs"><span class="w-3 h-3 rounded-full bg-red-200 border border-red-400"></span> <span class="font-bold text-gray-600">Occupé (محجوزة)</span></div>
-                </div>
-
-                <div id="parasols-grid-container" class="bg-gray-50 p-4 rounded-2xl border border-gray-200 overflow-x-auto hide-scrollbar space-y-3">
-                    </div>
-            </div>
-
         </div>
     </main>
 
     <script type="module" src="./js/firebase.js"></script>
     <script type="module" src="./js/ui.js"></script>
     <script type="module" src="./js/admin.js"></script>
-    <script type="module" src="./js/parasols.js"></script>
 </body>
 </html>
+
