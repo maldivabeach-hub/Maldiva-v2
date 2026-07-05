@@ -1,6 +1,6 @@
 // /js/reservation.js
 import { initPublicAuth } from './firebase.js';
-import { submitNewReservation, getReservationByCode } from '../services/reservationService.js';
+import { submitNewReservation, getReservationByCode } from './reservationService.js'; // تم التعديل هنا
 import { showNotification, showSuccessModal } from './ui.js';
 
 // 1. تسجيل الدخول المجهول للزبون (لكي تسمح له قاعدة البيانات بالكتابة)
@@ -25,7 +25,6 @@ const names = {
 };
 const allPrices = { ...equipPrices, ...actPrices };
 
-// إعداد تاريخ الغد كتاريخ افتراضي للحجز
 const setInitialDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -34,9 +33,6 @@ const setInitialDate = () => {
 };
 setInitialDate();
 
-// --------------------------------------------------------
-// 3. دوال الحساب والواجهة
-// --------------------------------------------------------
 const adjustQty = (elementId, amount) => {
     const span = document.getElementById(elementId);
     if (!span) return;
@@ -49,12 +45,10 @@ const adjustQty = (elementId, amount) => {
 
 const calculateTotal = () => {
     let subtotalEquip = 0, subtotalAct = 0;
-    
     for (let id in equipPrices) {
         const el = document.getElementById(id);
         if (el) subtotalEquip += parseInt(el.innerText) * equipPrices[id];
     }
-    
     for (let id in actPrices) {
         const el = document.getElementById(id);
         if (el) subtotalAct += parseInt(el.innerText) * actPrices[id];
@@ -79,9 +73,6 @@ const calculateTotal = () => {
     return finalTotal;
 };
 
-// --------------------------------------------------------
-// 4. دالة تقديم الحجز
-// --------------------------------------------------------
 const submitReservation = async () => {
     const clientName = document.getElementById('client-name').value.trim();
     const clientPhone = document.getElementById('client-phone').value.trim();
@@ -93,7 +84,6 @@ const submitReservation = async () => {
 
     let hasItems = false;
     let chosenItems = {};
-    
     for (let id in allPrices) {
         const el = document.getElementById(id);
         if(el) {
@@ -124,14 +114,12 @@ const submitReservation = async () => {
         createdAt: new Date().toISOString()
     };
 
-    // تحديث نافذة النجاح
     document.getElementById('booking-success-code').innerText = '#' + trackingCode;
     document.getElementById('summary-items').innerHTML = `<div class="text-xs py-1 text-maldiva-teal font-bold mb-1 border-b border-gray-100"><i class="fa-solid fa-clock"></i> الأيام المحددة: ${duration} يوم / Jour(s)</div>` + 
         Object.entries(chosenItems).map(([name, qty]) => `<div class="text-xs py-0.5">• ${qty} x ${name}</div>`).join('');
     document.getElementById('summary-total').innerText = totalStr;
 
     try {
-        // الاتصال بقاعدة البيانات عبر service
         await submitNewReservation(reservationData);
         showSuccessModal();
         resetForm();
@@ -151,9 +139,6 @@ const resetForm = () => {
     calculateTotal();
 };
 
-// --------------------------------------------------------
-// 5. دالة تتبع الحجز
-// --------------------------------------------------------
 const trackReservation = async () => {
     let code = document.getElementById('track-code-input').value.trim().toUpperCase();
     if (!code) return showNotification("Entrez votre code", "error");
@@ -161,9 +146,7 @@ const trackReservation = async () => {
     if (!code.startsWith('MLD-')) code = 'MLD-' + code; 
 
     try {
-        // التحسين (Optimization): جلب وثيقة واحدة فقط باستخدام getReservationByCode
         const data = await getReservationByCode(code);
-        
         if (!data) return showNotification("Aucun حجز trouvé avec ce رمز !", "error");
 
         document.getElementById('track-result-box').classList.remove('hidden');
@@ -191,7 +174,6 @@ const trackReservation = async () => {
         const iconBox = document.getElementById('track-status-icon');
         iconBox.className = `w-12 h-12 rounded-full flex items-center justify-center mx-auto text-xl ${current.icon}`;
         iconBox.innerHTML = `<i class="fa-solid ${current.fa}"></i>`;
-        
         document.getElementById('track-status-arabic').innerText = current.ar;
 
     } catch (error) {
@@ -199,9 +181,6 @@ const trackReservation = async () => {
     }
 };
 
-// --------------------------------------------------------
-// تسجيل الدوال لتصبح متاحة لـ HTML (Global Scope)
-// --------------------------------------------------------
 window.adjustQty = adjustQty;
 window.calculateTotal = calculateTotal;
 window.submitReservation = submitReservation;
