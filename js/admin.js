@@ -1,6 +1,6 @@
 // /js/admin.js
 
-import { getAdminReservations, updateReservationData, deleteReservation } from '../services/reservationService.js';
+import { getAdminReservations, updateReservationData, deleteReservation } from './reservationService.js';
 import { showNotification, openConfirmModal, closeConfirmModal } from './ui.js';
 
 // ========================================================
