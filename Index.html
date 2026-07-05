@@ -1,1 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maldiva Beach Club - Réservation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- ربط ملف التصميم -->
+    <link rel="stylesheet" href="./css/style.css">
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        maldiva: {
+                            dark: '#0b4c53', teal: '#24a19c', orange: '#ff7e67', sand: '#fbf7f0', accent: '#f4eee1'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Montserrat', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col justify-between pb-24 md:pb-8">
+
+    <!-- الإشعارات -->
+    <div id="custom-toast" class="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none max-w-sm w-[90%]">
+        <span id="toast-icon"></span>
+        <span id="toast-message" class="text-xs font-semibold"></span>
+    </div>
+
+    <!-- Header & Navigation -->
+    <div class="bg-maldiva-dark text-white text-[11px] py-2 px-4 flex justify-between items-center z-30 shadow-sm">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+            <span id="connection-status">Connexion en cours...</span>
+        </div>
+        <div class="font-bold tracking-wider text-maldiva-orange">MALDIVA BEACH CLUB</div>
+    </div>
+
+    <header class="relative bg-gradient-to-b from-maldiva-accent to-maldiva-sand pt-6 pb-8 px-4 text-center">
+        <div class="max-w-6xl mx-auto flex flex-col items-center">
+            <div class="w-48 h-48 md:w-52 md:h-52 mb-4 relative drop-shadow-xl hover:scale-105 transition-transform duration-500 flex items-center justify-center">
+                <div id="custom-logo-wrapper" class="hidden w-full h-full rounded-full border-4 border-white bg-white shadow-inner overflow-hidden">
+                    <img id="custom-logo-img" src="" class="w-full h-full object-cover" alt="[شعار]">
+                </div>
+                <svg id="default-svg-logo" viewBox="0 0 500 500" class="w-full h-full block">
+                    <defs>
+                        <radialGradient id="stickerBg" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#faf5eb"/><stop offset="100%" stop-color="#eedfc6"/>
+                        </radialGradient>
+                        <filter id="stickerShadow" x="-10%" y="-10%" width="130%" height="130%">
+                            <feDropShadow dx="2" dy="8" stdDeviation="10" flood-opacity="0.25"/>
+                        </filter>
+                    </defs>
+                    <circle cx="250" cy="250" r="230" fill="url(#stickerBg)" filter="url(#stickerShadow)"/>
+                    <path d="M 50 150 Q 150 50 320 80 Q 200 130 50 150 Z" fill="#cfbeaa" opacity="0.45"/>
+                    <circle cx="270" cy="245" r="55" fill="#ff7e67" />
+                    <line x1="210" y1="260" x2="330" y2="260" stroke="#24a19c" stroke-width="5" stroke-linecap="round"/>
+                    <line x1="225" y1="272" x2="315" y2="272" stroke="#ff7e67" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="240" y1="282" x2="300" y2="282" stroke="#ff7e67" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M 270 205 Q 275 200 280 205 Q 285 200 290 205" stroke="#0b4c53" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    <path d="M 320 250 Q 345 185 295 130" stroke="#7e4a1e" stroke-width="8" fill="none" stroke-linecap="round"/>
+                    <path d="M 295 130 Q 235 145 205 110" stroke="#11755a" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <path d="M 295 130 Q 240 100 230 65" stroke="#169371" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <path d="M 295 130 Q 300 70 325 50" stroke="#11755a" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <path d="M 295 130 Q 350 90 370 100" stroke="#169371" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <path d="M 295 130 Q 355 145 375 180" stroke="#11755a" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <path d="M 295 130 Q 320 170 310 205" stroke="#0d5944" stroke-width="5" fill="none" stroke-linecap="round"/>
+                    <g transform="translate(165, 110) rotate(-6)"><path d="M 0 0 C 25 40 35 125 25 185 C 15 205 -15 205 -25 185 C -35 125 -25 40 0 0 Z" fill="#24a19c" /></g>
+                    <g transform="translate(120, 120) rotate(6)"><path d="M 0 0 C 25 40 35 125 25 185 C 15 205 -15 205 -25 185 C -35 125 -25 40 0 0 Z" fill="#fbd1a2" stroke="#dba672" stroke-width="3"/><circle cx="0" cy="115" r="10" fill="#ff7e67" /><ellipse cx="-16" cy="105" rx="12" ry="8" fill="#ff7e67" transform="rotate(20 -16 105)"/><ellipse cx="16" cy="105" rx="12" ry="8" fill="#ff7e67" transform="rotate(-20 16 105)"/><ellipse cx="-13" cy="128" rx="12" ry="8" fill="#ff7e67" transform="rotate(-40 -13 128)"/><ellipse cx="13" cy="128" rx="12" ry="8" fill="#ff7e67" transform="rotate(40 13 128)"/><ellipse cx="0" cy="90" rx="8" ry="14" fill="#ff7e67" /><circle cx="0" cy="115" r="5" fill="#fbd1a2" /></g>
+                    <path d="M 90 355 Q 200 310 310 340 T 430 330 L 415 390 Q 300 410 90 390 Z" fill="#24a19c" />
+                    <text x="250" y="320" font-family="'Playfair Display', serif" font-weight="bold" font-size="68" fill="#0b4c53" text-anchor="middle">Maldiva</text>
+                    <path id="curvePath" d="M 330 200 A 110 110 0 0 1 430 305" fill="none" />
+                    <text font-family="'Montserrat', sans-serif" font-weight="800" font-size="16" fill="#0b4c53" letter-spacing="4"><textPath href="#curvePath" startOffset="10%">BEACH CLUB</textPath></text>
+                    <path d="M 412 412 L 440 380 C 420 370 390 390 412 412 Z" fill="#ffffff" opacity="0.15"/>
+                    <path d="M 412 412 L 440 380 A 230 230 0 0 1 380 440 Z" fill="#d2c4ae" />
+                    <path d="M 380 440 L 412 412 L 440 380 C 390 360 360 390 380 440 Z" fill="#ffffff" stroke="#eedfc6" stroke-width="1"/>
+                </svg>
+            </div>
+            <h1 class="serif-title text-4xl md:text-5xl font-extrabold text-maldiva-dark mb-1">Maldiva Beach Club</h1>
+            <p class="text-[11px] uppercase tracking-widest text-maldiva-teal font-bold mb-3">Équipements & Activités Nautiques • حجز المستلزمات والأنشطة البحرية</p>
+            <div class="w-16 h-1 bg-gradient-to-r from-maldiva-teal to-maldiva-orange rounded-full"></div>
+        </div>
+    </header>
+
+    <div class="bg-white border-y border-gray-100 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-2xl mx-auto flex justify-around">
+            <button onclick="window.switchTab('booking-form')" id="btn-tab-booking" class="flex-1 py-4 text-center text-xs font-bold uppercase tracking-wider text-maldiva-teal border-b-2 border-maldiva-teal transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-umbrella-beach text-base"></i><span>Réserver / حجز</span>
+            </button>
+            <button onclick="window.switchTab('tracking-section')" id="btn-tab-tracking" class="flex-1 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-400 border-b-2 border-transparent transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-magnifying-glass text-base"></i><span>Suivi / تتبع الحجز</span>
+            </button>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+        
+        <!-- Booking Tab -->
+        <div id="tab-booking-form" class="space-y-8 block">
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-2xl shadow-sm max-w-4xl mx-auto">
+                <h4 class="text-sm font-bold text-yellow-800 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Note Importante / ملاحظة هامة
+                </h4>
+                <div class="text-xs text-yellow-700 leading-relaxed space-y-1.5">
+                    <p>Les 3 premières rangées sont réservées exclusivement aux <strong>Transats en bois</strong>. Le choix des places se fait sur la plage (Premier arrivé, premier servi).</p>
+                    <p class="font-arabic" dir="rtl">الصفوف الثلاثة الأولى مخصصة فقط لمن يحجز <strong>كرسي خشب (Transat)</strong>. حرية الاختيار للأماكن تكون على الشاطئ (الأسبقية لمن يأتي أولاً).</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <div class="lg:col-span-7 xl:col-span-8 space-y-8">
+                    <div class="space-y-4">
+                        <div class="border-b border-gray-200 pb-3">
+                            <h3 class="serif-title text-2xl font-bold text-maldiva-dark"><i class="fa-solid fa-sun text-maldiva-orange mr-2"></i>Équipements de Plage</h3>
+                            <p class="text-xs text-gray-500 mt-1">Tarifs journaliers valables pour toute la journée • الأسعار صالحة طوال اليوم</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all">
+                                <div class="w-20 h-20 rounded-xl overflow-hidden bg-orange-100 flex-shrink-0"><img id="img-item-chaise" src="https://i.postimg.cc/3kxzmscR/IMG-8144.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Chaise]"></div>
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-baseline">
+                                        <h4 class="font-bold text-gray-800 text-sm">Chaise Longue</h4>
+                                        <span class="text-xs text-gray-400 font-arabic" dir="rtl">كرسي استلقاء</span>
+                                    </div>
+                                    <p class="text-[10px] text-gray-500 mt-0.5">À partir de 3 chaises longues, parasol & table inclus.</p>
+                                    <span class="text-sm font-extrabold text-maldiva-teal block mt-1">2,000 DA <span class="text-[10px] font-normal text-gray-400">/ personne</span></span>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all">
+                                <div class="w-20 h-20 rounded-xl overflow-hidden bg-teal-100 flex-shrink-0"><img id="img-item-transat" src="https://i.postimg.cc/zyG4KscT/IMG-8145.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Transat]"></div>
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-baseline">
+                                        <h4 class="font-bold text-gray-800 text-sm">Transat en Bois</h4>
+                                        <span class="text-xs text-gray-400 font-arabic" dir="rtl">كرسي الاسترخاء بالخشب</span>
+                                    </div>
+                                    <p class="text-[10px] text-gray-500 mt-0.5">Matelas épais, parasol & table ajustable.</p>
+                                    <span class="text-sm font-extrabold text-maldiva-teal block mt-1">3,000 DA <span class="text-[10px] font-normal text-gray-400">/ personne</span></span>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all md:col-span-2 relative">
+                                <div class="w-24 h-24 rounded-xl overflow-hidden bg-orange-100 flex-shrink-0"><img id="img-item-baldaquin" src="https://i.postimg.cc/xX1BMw4H/IMG-8148.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Baldaquin]"></div>
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-baseline">
+                                        <h4 class="font-bold text-gray-800 text-sm">Baldaquin Royal</h4>
+                                        <span class="text-xs text-gray-400 font-arabic" dir="rtl">بالداكين ملكي</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Lit de plage double, rideaux & intimité complète.</p>
+                                    <span class="text-sm font-extrabold text-maldiva-orange block mt-1.5">10,000 DA <span class="text-[10px] font-normal text-gray-400">/ jour</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 border border-gray-100 mt-4">
+                            <h4 class="font-bold text-sm text-maldiva-dark mb-4 border-b pb-2">Inclus Gratuitement avec vos Réservations</h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                                <div class="space-y-1"><i class="fa-solid fa-square-parking text-lg text-maldiva-teal"></i><div class="text-xs font-bold text-gray-700">Parking</div></div>
+                                <div class="space-y-1"><i class="fa-solid fa-shower text-lg text-maldiva-teal"></i><div class="text-xs font-bold text-gray-700">Douches</div></div>
+                                <div class="space-y-1"><i class="fa-solid fa-child-reaching text-lg text-maldiva-teal"></i><div class="text-xs font-bold text-gray-700">Jeux Enfants</div></div>
+                                <div class="space-y-1"><i class="fa-solid fa-glass-water text-lg text-maldiva-teal"></i><div class="text-xs font-bold text-gray-700">Service</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 pt-4 border-t border-gray-200">
+                        <div class="border-b border-gray-200 pb-3">
+                            <h3 class="serif-title text-2xl font-bold text-maldiva-dark"><i class="fa-solid fa-water text-maldiva-teal mr-2"></i>Activités Nautiques</h3>
+                            <p class="text-xs text-gray-500 mt-1">Profitez de la mer avec nos équipements nautiques</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- JET SKI -->
+                            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-all">
+                                <div class="w-20 h-20 rounded-xl overflow-hidden bg-blue-50 flex-shrink-0"><img id="img-item-jetski" src="https://i.postimg.cc/ykVK7WWh/IMG-8522.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Jet-ski]"></div>
+                                <div class="flex-grow space-y-1.5">
+                                    <div class="flex justify-between items-baseline mb-1">
+                                        <h4 class="font-bold text-gray-800 text-sm">Jet-Ski</h4>
+                                        <span class="text-[10px] text-gray-500 font-semibold bg-gray-100 px-2 py-0.5 rounded">2 personnes</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">15 Min :</span><span class="font-bold text-maldiva-dark">6,000 DA</span></div>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">30 Min :</span><span class="font-bold text-maldiva-dark">12,000 DA</span></div>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">1 Heure :</span><span class="font-bold text-maldiva-dark">20,000 DA</span></div>
+                                </div>
+                            </div>
+                            
+                            <!-- BATEAU -->
+                            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-all">
+                                <div class="w-20 h-20 rounded-xl overflow-hidden bg-blue-50 flex-shrink-0"><img id="img-item-bateau" src="https://i.postimg.cc/grMpkmRj/IMG-8525.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Bateau]"></div>
+                                <div class="flex-grow space-y-2">
+                                    <div class="flex justify-between items-baseline mb-1">
+                                        <h4 class="font-bold text-gray-800 text-sm">Bateau</h4>
+                                        <span class="text-[10px] text-gray-500 font-semibold bg-gray-100 px-2 py-0.5 rounded">+4 personnes</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500">Sortie en mer</p>
+                                    <div class="flex justify-between items-center text-xs pt-1"><span class="text-gray-500">À partir de :</span><span class="font-bold text-maldiva-orange">4,000 DA</span></div>
+                                </div>
+                            </div>
+
+                            <!-- BOUEE TRACTEE -->
+                            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-all">
+                                <div class="w-20 h-20 rounded-xl overflow-hidden bg-blue-50 flex-shrink-0"><img id="img-item-bouee" src="https://i.postimg.cc/TpRxThh9/IMG-8523.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Bouée]"></div>
+                                <div class="flex-grow space-y-2">
+                                    <h4 class="font-bold text-gray-800 text-sm">Bouée tractée</h4>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">2 personnes :</span><span class="font-bold text-maldiva-dark">3,000 DA</span></div>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">3 personnes :</span><span class="font-bold text-maldiva-dark">4,000 DA</span></div>
+                                </div>
+                            </div>
+
+                            <!-- PEDALO -->
+                            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-all">
+                                <div class="w-20 h-20 rounded-xl overflow-hidden bg-blue-50 flex-shrink-0"><img id="img-item-pedalo" src="https://i.postimg.cc/GHcRb99K/IMG-8524.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Pédalo]"></div>
+                                <div class="flex-grow space-y-2">
+                                    <h4 class="font-bold text-gray-800 text-sm">Pédalo</h4>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">30 Min :</span><span class="font-bold text-maldiva-dark">1,000 DA</span></div>
+                                    <div class="flex justify-between items-center text-xs"><span class="text-gray-500">1 Heure :</span><span class="font-bold text-maldiva-dark">2,000 DA</span></div>
+                                </div>
+                            </div>
+
+                            <!-- KAYAK -->
+                            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-all md:col-span-2">
+                                <div class="w-24 h-24 rounded-xl overflow-hidden bg-blue-50 flex-shrink-0"><img id="img-item-kayak" src="https://i.postimg.cc/hfSnKhhM/IMG-8521.jpg?w=500&q=80" class="w-full h-full object-cover" alt="[Kayak]"></div>
+                                <div class="flex-grow space-y-2">
+                                    <h4 class="font-bold text-gray-800 text-sm">Kayak</h4>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><div class="flex justify-between items-center text-xs"><span class="text-gray-500">30 Min :</span><span class="font-bold text-maldiva-dark">1,000 DA</span></div></div>
+                                        <div><div class="flex justify-between items-center text-xs"><span class="text-gray-500">1 Heure :</span><span class="font-bold text-maldiva-dark">2,000 DA</span></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Section -->
+                <div class="lg:col-span-5 xl:col-span-4">
+                    <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 h-fit space-y-5 sticky top-24">
+                        <div class="border-b border-gray-100 pb-3 text-center">
+                            <h4 class="serif-title text-xl font-bold text-maldiva-dark">Formulaire de Réservation</h4>
+                            <p class="text-xs text-gray-400">احسب السعر واملأ تفاصيل حجزك</p>
+                        </div>
+
+                        <form id="booking-form-el" class="space-y-4" onsubmit="event.preventDefault();">
+                            <div class="space-y-3">
+                                <div><input type="text" id="client-name" placeholder="Nom Complet / الاسم الكامل *" class="w-full bg-maldiva-sand border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-maldiva-teal" required></div>
+                                <div><input type="tel" id="client-phone" placeholder="Téléphone / رقم الهاتف *" class="w-full bg-maldiva-sand border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-maldiva-teal" required></div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Date de Visite / تاريخ الزيارة *</label>
+                                    <input type="date" id="visit-date" class="w-full bg-maldiva-sand border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-maldiva-teal" required>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 pt-2 border-t border-gray-100">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase bg-gray-50 py-1.5 px-3 rounded-lg border border-gray-100"><i class="fa-solid fa-umbrella-beach text-maldiva-orange mr-1"></i> Équipements de plage</label>
+                                <div class="flex items-center justify-between bg-maldiva-sand px-3 py-1.5 rounded-xl">
+                                    <span class="text-xs font-bold text-gray-700">Chaise Longue</span>
+                                    <div class="flex items-center gap-2"><button type="button" onclick="window.adjustQty('qty-chaise', -1)" class="w-6 h-6 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-chaise" class="font-bold w-4 text-center text-xs">0</span><button type="button" onclick="window.adjustQty('qty-chaise', 1)" class="w-6 h-6 rounded bg-white shadow-sm font-bold text-xs">+</button></div>
+                                </div>
+                                <div class="flex items-center justify-between bg-maldiva-sand px-3 py-1.5 rounded-xl">
+                                    <span class="text-xs font-bold text-gray-700">Transat en Bois</span>
+                                    <div class="flex items-center gap-2"><button type="button" onclick="window.adjustQty('qty-transat', -1)" class="w-6 h-6 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-transat" class="font-bold w-4 text-center text-xs text-maldiva-teal">0</span><button type="button" onclick="window.adjustQty('qty-transat', 1)" class="w-6 h-6 rounded bg-white shadow-sm font-bold text-xs">+</button></div>
+                                </div>
+                                <div class="flex items-center justify-between bg-maldiva-sand px-3 py-1.5 rounded-xl border border-maldiva-orange/20">
+                                    <span class="text-xs font-bold text-gray-700">Baldaquins</span>
+                                    <div class="flex items-center gap-2"><button type="button" onclick="window.adjustQty('qty-baldaquin', -1)" class="w-6 h-6 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-baldaquin" class="font-bold w-4 text-center text-xs">0</span><button type="button" onclick="window.adjustQty('qty-baldaquin', 1)" class="w-6 h-6 rounded bg-white shadow-sm font-bold text-xs">+</button></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 pt-2 border-t border-gray-100">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase bg-blue-50 py-1.5 px-3 rounded-lg border border-blue-100 flex justify-between">
+                                    <span><i class="fa-solid fa-water text-maldiva-teal mr-1"></i> Activités Nautiques</span>
+                                </label>
+                                <div class="h-40 overflow-y-auto pr-1 space-y-2 hide-scrollbar">
+                                    <div class="bg-maldiva-sand px-3 py-2 rounded-xl">
+                                        <div class="text-[11px] font-bold text-gray-800 mb-1.5">Jet-Ski</div>
+                                        <div class="flex justify-between items-center mb-1"><span class="text-[10px] text-gray-500">15 Min</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-jetski-15', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-jetski-15" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-jetski-15', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                        <div class="flex justify-between items-center mb-1"><span class="text-[10px] text-gray-500">30 Min</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-jetski-30', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-jetski-30" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-jetski-30', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                        <div class="flex justify-between items-center"><span class="text-[10px] text-gray-500">1 Heure</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-jetski-60', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-jetski-60" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-jetski-60', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                    </div>
+                                    <div class="bg-maldiva-sand px-3 py-2 rounded-xl">
+                                        <div class="text-[11px] font-bold text-gray-800 mb-1.5">Bouée Tractée</div>
+                                        <div class="flex justify-between items-center mb-1"><span class="text-[10px] text-gray-500">2 Personnes</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-bouee-2', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-bouee-2" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-bouee-2', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                        <div class="flex justify-between items-center"><span class="text-[10px] text-gray-500">3 Personnes</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-bouee-3', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-bouee-3" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-bouee-3', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                    </div>
+                                    <div class="bg-maldiva-sand px-3 py-2 rounded-xl">
+                                        <div class="text-[11px] font-bold text-gray-800 mb-1.5">Bateau (Sortie)</div>
+                                        <div class="flex justify-between items-center"><span class="text-[10px] text-gray-500">+4 Personnes</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-bateau-standard', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-bateau-standard" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-bateau-standard', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                    </div>
+                                    <div class="bg-maldiva-sand px-3 py-2 rounded-xl">
+                                        <div class="text-[11px] font-bold text-gray-800 mb-1.5">Pédalo</div>
+                                        <div class="flex justify-between items-center mb-1"><span class="text-[10px] text-gray-500">30 Min</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-pedalo-30', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-pedalo-30" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-pedalo-30', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                        <div class="flex justify-between items-center"><span class="text-[10px] text-gray-500">1 Heure</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-pedalo-60', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-pedalo-60" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-pedalo-60', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                    </div>
+                                    <div class="bg-maldiva-sand px-3 py-2 rounded-xl">
+                                        <div class="text-[11px] font-bold text-gray-800 mb-1.5">Kayak</div>
+                                        <div class="flex justify-between items-center mb-1"><span class="text-[10px] text-gray-500">30 Min</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-kayak-30', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-kayak-30" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-kayak-30', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                        <div class="flex justify-between items-center"><span class="text-[10px] text-gray-500">1 Heure</span><div class="flex items-center gap-1.5"><button type="button" onclick="window.adjustQty('qty-kayak-60', -1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">-</button><span id="qty-kayak-60" class="font-bold w-3 text-center text-[10px]">0</span><button type="button" onclick="window.adjustQty('qty-kayak-60', 1)" class="w-5 h-5 rounded bg-white shadow-sm font-bold text-xs">+</button></div></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-gray-100">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Durée (Équipements Plage) / أيام مستلزمات الشاطئ</label>
+                                <select id="duration" onchange="window.calculateTotal()" class="w-full bg-maldiva-sand border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
+                                    <option value="1">1 Jour / يوم واحد</option>
+                                    <option value="2">2 Jours / يومين</option>
+                                    <option value="3">3 Jours / 3 أيام</option>
+                                    <option value="5">5 Jours (-10% Remise plage) / 5 أيام</option>
+                                    <option value="7">Une semaine (-15% Remise plage)</option>
+                                </select>
+                            </div>
+
+                            <div class="bg-gradient-to-tr from-maldiva-dark to-teal-950 rounded-2xl p-4 text-white">
+                                <div class="flex justify-between items-center mb-1 text-[10px] opacity-80">
+                                    <span>Total Estimé / المجموع الإجمالي</span>
+                                    <span id="discount-badge" class="hidden bg-maldiva-orange text-white font-bold px-2 py-0.5 rounded text-[8px]">REMISE ACTIVE</span>
+                                </div>
+                                <div class="flex justify-between items-baseline">
+                                    <span id="total-price" class="text-2xl font-extrabold text-maldiva-orange">0 DA</span>
+                                    <span class="text-xs opacity-70">TTC</span>
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="window.submitReservation()" class="w-full bg-gradient-to-r from-maldiva-teal to-maldiva-dark text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:from-maldiva-orange hover:to-maldiva-orange transition-all duration-300 uppercase text-xs tracking-wider">
+                                Confirmer la Demande • إرسال الطلب
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Tracking Tab -->
+        <div id="tab-tracking-section" class="max-w-xl mx-auto space-y-6 hidden">
+            <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 text-center space-y-4">
+                <div class="w-16 h-16 bg-maldiva-accent text-maldiva-dark rounded-full flex items-center justify-center text-2xl mx-auto"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <div>
+                    <h3 class="serif-title text-2xl font-bold text-maldiva-dark">Suivi de Réservation • تتبع الحجز</h3>
+                    <p class="text-xs text-gray-500 mt-1">Saisissez votre code pour vérifier si votre حجز a été validé</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 pt-2">
+                    <input type="text" id="track-code-input" placeholder="Ex: MLD-4829" class="flex-grow bg-maldiva-sand border border-gray-200 rounded-xl px-4 py-3 text-center text-sm font-bold focus:outline-none uppercase">
+                    <button onclick="window.trackReservation()" class="bg-maldiva-teal hover:bg-maldiva-dark text-white font-bold px-6 py-3 rounded-xl text-xs transition-all tracking-wider uppercase">Vérifier / تحقق</button>
+                </div>
+            </div>
+
+            <div id="track-result-box" class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 hidden space-y-4">
+                <div class="text-center space-y-2 border-b pb-4">
+                    <div id="track-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center mx-auto text-xl"></div>
+                    <h4 class="font-bold text-lg text-gray-800">Détails du الحجز</h4>
+                    <span id="track-status-badge" class="px-3 py-1 rounded-full text-xs font-bold inline-block"></span>
+                </div>
+
+                <div id="track-res-parasol" class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center hidden animate-pulse">
+                    <div class="text-blue-800 font-bold text-sm uppercase tracking-wide"><i class="fa-solid fa-umbrella-beach mr-1"></i> Votre Parasol / رقم مظلتك</div>
+                    <div id="track-parasol-id" class="text-3xl font-extrabold text-blue-900 mt-1">--</div>
+                    <div class="text-[10px] text-blue-600 mt-1 font-arabic" dir="rtl">يرجى التوجه إلى هذه المظلة المخصصة لك.</div>
+                </div>
+
+                <div class="space-y-3 text-xs text-gray-600">
+                    <div class="flex justify-between border-b pb-2"><span>Code:</span><strong id="track-res-code" class="text-maldiva-dark"></strong></div>
+                    <div class="flex justify-between border-b pb-2"><span>Client:</span><strong id="track-res-name"></strong></div>
+                    <div class="flex justify-between border-b pb-2"><span>Date de visite:</span><strong id="track-res-date"></strong></div>
+                    <div class="flex justify-between border-b pb-2"><span>Durée Plage:</span><strong id="track-res-dur"></strong></div>
+                    <div id="track-res-items" class="bg-maldiva-sand p-3 rounded-xl space-y-1.5 font-semibold text-gray-700"></div>
+                </div>
+                <div id="track-status-arabic" class="text-xs text-gray-500 font-arabic text-center leading-relaxed" dir="rtl"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300 opacity-0">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 transform translate-y-4 transition-transform duration-300 relative">
+            <button onclick="window.hideSuccessModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div class="text-center space-y-4">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl"><i class="fa-solid fa-circle-check"></i></div>
+                <div>
+                    <h3 class="serif-title text-2xl font-bold text-maldiva-dark">Demande envoyée !</h3>
+                    <p class="text-xs text-gray-500 mt-1">Notez bien votre code de suivi :</p>
+                </div>
+                <div class="bg-maldiva-orange/10 text-maldiva-orange text-xl font-extrabold tracking-widest py-3 px-6 rounded-2xl inline-block" id="booking-success-code">#MLD-0000</div>
+                
+                <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-xs font-bold shadow-sm animate-pulse">
+                    <i class="fa-solid fa-camera mr-1"></i> Important : Veuillez prendre une capture d'écran de ce code et le présenter lors de votre visite !
+                </div>
+
+                <div class="bg-maldiva-sand p-4 rounded-xl text-left text-xs space-y-1">
+                    <div class="font-bold text-maldiva-dark border-b border-gray-200 pb-1.5 mb-1.5">Résumé :</div>
+                    <div id="summary-items" class="space-y-1 text-gray-600 max-h-32 overflow-y-auto"></div>
+                    <p class="pt-1.5 border-t border-gray-200 font-bold text-maldiva-teal flex justify-between">
+                        <span>Total estimé :</span><span id="summary-total" class="text-sm">0 DA</span>
+                    </p>
+                </div>
+                <p class="text-xs text-gray-500 font-arabic" dir="rtl">سنتواصل معك هاتفياً قريباً لتأكيد الحجز.</p>
+                <button type="button" onclick="window.hideSuccessModal()" class="w-full bg-maldiva-dark text-white font-bold py-3 rounded-xl hover:bg-maldiva-orange">Fermer / إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-maldiva-dark text-white py-8 px-4 border-t-4 border-maldiva-orange mt-12">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div><span class="serif-title text-2xl font-bold tracking-wider text-maldiva-orange">MALDIVA</span><p class="text-[10px] uppercase tracking-widest text-gray-300 mt-1">Plage Dorée, Tipaza, Algérie</p></div>
+            <p class="text-[10px] text-gray-400">&copy; 2026 Maldiva Beach Club. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <!-- ربط السكريبتات الجديدة بنظام Modular -->
+    <script type="module" src="./js/firebase.js"></script>
+    <script type="module" src="./js/ui.js"></script>
+    <script type="module" src="./js/reservation.js"></script>
+
+</body>
+</html>
