@@ -1,6 +1,6 @@
 // /js/reservation.js
 import { initPublicAuth } from './firebase.js';
-import { submitNewReservation, getReservationByCode } from './reservationService.js'; // تم التعديل هنا
+import { submitNewReservation, getReservationByCode } from './reservationService.js';
 import { showNotification, showSuccessModal } from './ui.js';
 
 // 1. تسجيل الدخول المجهول للزبون (لكي تسمح له قاعدة البيانات بالكتابة)
@@ -25,6 +25,9 @@ const names = {
 };
 const allPrices = { ...equipPrices, ...actPrices };
 
+// متغير عام لحفظ ملاحظات العروض الخاصة لإظهارها في الفاتورة النهائية
+let currentSpecialNotes = [];
+
 const setInitialDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -45,15 +48,45 @@ const adjustQty = (elementId, amount) => {
 
 const calculateTotal = () => {
     let subtotalEquip = 0, subtotalAct = 0;
-    for (let id in equipPrices) {
-        const el = document.getElementById(id);
-        if (el) subtotalEquip += parseInt(el.innerText) * equipPrices[id];
+    currentSpecialNotes = []; // تصفير الملاحظات مع كل حساب جديد
+
+    // ==========================================
+    // حساب أسعار مستلزمات الشاطئ (مع تطبيق القواعد الخاصة)
+    // ==========================================
+    const qtyChaise = parseInt(document.getElementById('qty-chaise')?.innerText || 0);
+    const qtyTransat = parseInt(document.getElementById('qty-transat')?.innerText || 0);
+    const qtyBaldaquin = parseInt(document.getElementById('qty-baldaquin')?.innerText || 0);
+
+    // القاعدة 1: بالضبط 2 Chaise Longues = 5000
+    if (qtyChaise === 2) {
+        subtotalEquip += 5000;
+        currentSpecialNotes.push("2 Chaise Longues = 5000 DA (Parasol + Table inclus)");
+    } else {
+        subtotalEquip += qtyChaise * equipPrices['qty-chaise'];
     }
+
+    // القاعدة 2: بالضبط 2 Transats en bois = 7000
+    if (qtyTransat === 2) {
+        subtotalEquip += 7000;
+        currentSpecialNotes.push("2 Transats en bois = 7000 DA (Parasol + Table inclus)");
+    } else {
+        subtotalEquip += qtyTransat * equipPrices['qty-transat'];
+    }
+
+    // حساب البالداكين (بدون تغيير)
+    subtotalEquip += qtyBaldaquin * equipPrices['qty-baldaquin'];
+
+    // ==========================================
+    // حساب أسعار الأنشطة البحرية (بدون تغيير)
+    // ==========================================
     for (let id in actPrices) {
         const el = document.getElementById(id);
         if (el) subtotalAct += parseInt(el.innerText) * actPrices[id];
     }
     
+    // ==========================================
+    // حساب المدة الزمنية والتخفيضات الإضافية (إن وجدت)
+    // ==========================================
     const durationSelect = document.getElementById('duration');
     const duration = durationSelect ? parseInt(durationSelect.value) : 1;
     let totalEquip = subtotalEquip * duration;
@@ -66,6 +99,25 @@ const calculateTotal = () => {
     if (discountBadge) {
         if (discountApplied && subtotalEquip > 0) discountBadge.classList.remove('hidden');
         else discountBadge.classList.add('hidden');
+    }
+
+    // ==========================================
+    // تحديث واجهة المستخدم وعرض الملاحظات
+    // ==========================================
+    const notesContainer = document.getElementById('special-pricing-notes');
+    if (notesContainer) {
+        if (currentSpecialNotes.length > 0) {
+            notesContainer.innerHTML = currentSpecialNotes.map(note => 
+                `<div class="text-[11px] text-teal-800 bg-teal-50 border border-teal-200 p-2 rounded-lg font-bold flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-tags text-teal-600"></i>
+                    <span>${note}</span>
+                 </div>`
+            ).join('');
+            notesContainer.classList.remove('hidden');
+        } else {
+            notesContainer.innerHTML = '';
+            notesContainer.classList.add('hidden');
+        }
     }
 
     let finalTotal = totalEquip + subtotalAct;
@@ -114,10 +166,27 @@ const submitReservation = async () => {
         createdAt: new Date().toISOString()
     };
 
+    // تحديث واجهة فاتورة النجاح
     document.getElementById('booking-success-code').innerText = '#' + trackingCode;
     document.getElementById('summary-items').innerHTML = `<div class="text-xs py-1 text-maldiva-teal font-bold mb-1 border-b border-gray-100"><i class="fa-solid fa-clock"></i> الأيام المحددة: ${duration} يوم / Jour(s)</div>` + 
         Object.entries(chosenItems).map(([name, qty]) => `<div class="text-xs py-0.5">• ${qty} x ${name}</div>`).join('');
     document.getElementById('summary-total').innerText = totalStr;
+
+    // إضافة ملاحظات التخفيض الخاصة في فاتورة النجاح (Modal)
+    const summaryNotesContainer = document.getElementById('summary-special-notes');
+    if (summaryNotesContainer) {
+        if (currentSpecialNotes.length > 0) {
+            summaryNotesContainer.innerHTML = currentSpecialNotes.map(note =>
+                `<div class="text-[11px] text-teal-800 font-bold flex items-center gap-1.5 mt-1.5">
+                    <i class="fa-solid fa-tags text-teal-600"></i> <span>${note}</span>
+                 </div>`
+            ).join('');
+            summaryNotesContainer.classList.remove('hidden');
+        } else {
+            summaryNotesContainer.innerHTML = '';
+            summaryNotesContainer.classList.add('hidden');
+        }
+    }
 
     try {
         await submitNewReservation(reservationData);
