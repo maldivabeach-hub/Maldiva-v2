@@ -4,6 +4,44 @@ import { getAdminReservations, updateReservationData, deleteReservation } from '
 import { showNotification, openConfirmModal, closeConfirmModal } from './ui.js';
 
 // ========================================================
+// 0. إعدادات الأسعار (مطابقة تماماً لنظام الزبون)
+// ========================================================
+const BASE_PRICES = {
+    'Chaise Longue': 2000,
+    'Transat en Bois': 3000,
+    'Baldaquin Royal': 10000,
+    'Jet-Ski (15 Min)': 6000,
+    'Jet-Ski (30 Min)': 12000,
+    'Jet-Ski (1 Heure)': 20000,
+    'Pédalo (30 Min)': 1000,
+    'Pédalo (1 Heure)': 2000,
+    'Kayak (30 Min)': 1000,
+    'Kayak (1 Heure)': 2000,
+    'Bouée Tractée (2 pers)': 3000,
+    'Bouée Tractée (3 pers)': 4000,
+    'Bateau (+4 pers)': 4000,
+    
+    // دعم الأسماء القديمة إن وجدت في الحجوزات السابقة لتجنب الأخطاء
+    'Chaise longue': 2000,
+    'Transat': 3000,
+    'Baldaquin': 10000,
+    'Jet-Ski': 6000,
+    'Pédalo': 1000,
+    'Kayak': 1000,
+    'Bouée tractée': 3000,
+    'Bateau': 4000
+};
+
+const STANDARD_ITEMS = [
+    'Chaise Longue', 'Transat en Bois', 'Baldaquin Royal', 
+    'Jet-Ski (15 Min)', 'Jet-Ski (30 Min)', 'Jet-Ski (1 Heure)', 
+    'Pédalo (30 Min)', 'Pédalo (1 Heure)', 
+    'Kayak (30 Min)', 'Kayak (1 Heure)', 
+    'Bouée Tractée (2 pers)', 'Bouée Tractée (3 pers)', 
+    'Bateau (+4 pers)'
+];
+
+// ========================================================
 // 1. المتغيرات العامة (Global State)
 // ========================================================
 let adminAuthorized = false;
@@ -182,11 +220,22 @@ export const renderAdminReservations = async (forceRefresh = false) => {
         let borderClass = res.isArchived ? 'border-purple-200' : 'border-gray-100';
         let archivedBadge = res.isArchived ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-600"><i class="fa-solid fa-box-archive"></i> Archivé</span>` : '';
 
+        // استخراج تاريخ ووقت الحجز إن وجد
+        let timeStr = '';
+        if (res.timestamp || res.createdAt) {
+            const dateObj = new Date(res.timestamp || res.createdAt);
+            if (!isNaN(dateObj.getTime())) {
+                const formatedDate = dateObj.toLocaleDateString('fr-FR');
+                const formatedTime = dateObj.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                timeStr = `<span class="text-[9px] text-gray-400 font-mono ml-2 block sm:inline mt-1 sm:mt-0 bg-gray-100 px-2 py-0.5 rounded"><i class="fa-regular fa-clock"></i> Reçu le: ${formatedDate} à ${formatedTime}</span>`;
+            }
+        }
+
         html += `
             <div class="bg-gray-50 border ${borderClass} rounded-2xl p-4 relative hover:border-maldiva-teal transition-all">
                 <div class="flex justify-between items-start gap-2 flex-wrap sm:flex-nowrap">
                     <div>
-                        <h5 class="font-bold text-sm text-gray-800">${res.clientName} <span class="text-xs text-gray-400 font-mono">#${res.trackingCode}</span></h5>
+                        <h5 class="font-bold text-sm text-gray-800">${res.clientName} <span class="text-xs text-gray-400 font-mono">#${res.trackingCode}</span> ${timeStr}</h5>
                         <a href="tel:${res.clientPhone}" class="text-xs text-maldiva-teal hover:underline font-semibold flex items-center gap-1 mt-0.5"><i class="fa-solid fa-phone"></i> ${res.clientPhone}</a>
                     </div>
                     <div class="flex flex-col items-end gap-1">
@@ -201,13 +250,17 @@ export const renderAdminReservations = async (forceRefresh = false) => {
                         <span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold ml-auto"><i class="fa-solid fa-clock"></i> ${res.duration || 1} Jour(s)</span>
                     </div>
                     <div class="pt-1">${itemsHTML}</div>
+                    ${res.notes ? `<div class="text-[10px] mt-1 text-gray-500"><i class="fa-solid fa-note-sticky"></i> <b>Notes:</b> ${res.notes}</div>` : ''}
                 </div>
                 
                 <div class="flex justify-between items-center gap-2 flex-wrap">
                     <span class="text-sm font-extrabold text-maldiva-dark">${res.totalPrice}</span>
                     <div class="flex items-center gap-1">
-                        <button onclick="window.setReservationStatus('${res.trackingCode}', 'approved')" class="bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold px-2 py-1.5 rounded">Accepter</button>
-                        <button onclick="window.setReservationStatus('${res.trackingCode}', 'declined')" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold px-2 py-1.5 rounded">Refuser</button>
+                        <button onclick="window.setReservationStatus('${res.trackingCode}', 'approved')" class="bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold px-2 py-1.5 rounded" title="Accepter"><i class="fa-solid fa-check"></i></button>
+                        <button onclick="window.setReservationStatus('${res.trackingCode}', 'declined')" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold px-2 py-1.5 rounded" title="Refuser"><i class="fa-solid fa-xmark"></i></button>
+                        
+                        <button onclick="window.openEditModal('${res.trackingCode}')" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold px-2 py-1.5 rounded flex items-center gap-1"><i class="fa-solid fa-pen"></i> Modifier</button>
+                        
                         <button onclick="window.dispatchWhatsAppMessage('${res.trackingCode}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded flex items-center gap-1"><i class="fa-brands fa-whatsapp"></i></button>
                         ${archiveBtn}
                         <button onclick="window.prepareDelete('${res.trackingCode}')" class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-1.5 rounded text-[10px]" title="Suppression"><i class="fa-solid fa-trash-can"></i></button>
@@ -219,7 +272,7 @@ export const renderAdminReservations = async (forceRefresh = false) => {
 };
 
 // ========================================================
-// 5. العمليات (قبول، رفض، أرشفة، حذف)
+// 5. العمليات الأساسية (قبول، رفض، أرشفة، حذف)
 // ========================================================
 export const setReservationStatus = async (trackingCode, newStatus) => {
     try {
@@ -260,7 +313,174 @@ export const executePendingDelete = async () => {
 };
 
 // ========================================================
-// 6. نظام رسائل الواتساب (WhatsApp) المنسق
+// 6. نظام التعديل الشامل (Edit System) 
+// ========================================================
+export const openEditModal = async (trackingCode) => {
+    const list = await getAdminReservations();
+    const res = list.find(item => item.trackingCode === trackingCode);
+    if (!res) return;
+
+    document.getElementById('edit-modal-code').innerText = trackingCode;
+    document.getElementById('edit-name').value = res.clientName || '';
+    document.getElementById('edit-phone').value = res.clientPhone || '';
+    document.getElementById('edit-date').value = res.visitDate || '';
+    document.getElementById('edit-duration').value = res.duration || '1';
+    document.getElementById('edit-notes').value = res.notes || '';
+    document.getElementById('edit-total-price').innerText = res.totalPrice || '0 DA';
+    
+    const currentItemsKeys = res.items ? Object.keys(res.items) : [];
+    const itemsToDisplay = [...new Set([...STANDARD_ITEMS, ...currentItemsKeys])];
+
+    let itemsHTML = '';
+    itemsToDisplay.forEach((item, index) => {
+        const currentQty = (res.items && res.items[item]) ? res.items[item] : 0;
+        itemsHTML += `
+            <div class="flex justify-between items-center bg-white p-2 rounded-xl border border-gray-100">
+                <span class="text-xs font-semibold text-gray-700">${item}</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="window.updateEditItemQty('edit-qty-${index}', -1)" class="w-6 h-6 bg-gray-100 rounded-full text-maldiva-dark font-bold flex items-center justify-center hover:bg-gray-200">-</button>
+                    <span id="edit-qty-${index}" class="text-xs font-bold w-4 text-center edit-item-qty" data-name="${item}">${currentQty}</span>
+                    <button type="button" onclick="window.updateEditItemQty('edit-qty-${index}', 1)" class="w-6 h-6 bg-gray-100 rounded-full text-maldiva-dark font-bold flex items-center justify-center hover:bg-gray-200">+</button>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('edit-items-container').innerHTML = itemsHTML;
+    
+    // إظهار النافذة
+    const modal = document.getElementById('edit-modal');
+    modal.classList.remove('hidden');
+    
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('translate-y-4');
+    }, 10);
+};
+
+export const updateEditItemQty = (id, change) => {
+    const el = document.getElementById(id);
+    if (el) {
+        let newQty = parseInt(el.innerText) + change;
+        if (newQty < 0) newQty = 0;
+        el.innerText = newQty;
+        calculateEditTotal(); // إعادة حساب السعر مباشرة عند تغيير أي رقم
+    }
+};
+
+// الدالة المسؤولة عن حساب الأسعار وتطبيق نفس قواعد التخفيض الموجودة للزبون
+export const calculateEditTotal = () => {
+    let subtotalEquip = 0;
+    let subtotalAct = 0;
+    
+    let qtyChaise = 0;
+    let qtyTransat = 0;
+    let qtyBaldaquin = 0;
+
+    // المرور على جميع العناصر لاستخراج الكميات
+    document.querySelectorAll('.edit-item-qty').forEach(el => {
+        const qty = parseInt(el.innerText) || 0;
+        const name = el.getAttribute('data-name');
+        
+        if (name === 'Chaise Longue' || name === 'Chaise longue') {
+            qtyChaise += qty;
+        } else if (name === 'Transat en Bois' || name === 'Transat') {
+            qtyTransat += qty;
+        } else if (name === 'Baldaquin Royal' || name === 'Baldaquin') {
+            qtyBaldaquin += qty;
+        } else {
+            // بقية العناصر تعتبر نشاطات بحرية
+            subtotalAct += qty * (BASE_PRICES[name] || 0);
+        }
+    });
+
+    // ==========================================
+    // حساب أسعار مستلزمات الشاطئ (بمنطق العروض)
+    // ==========================================
+    
+    // الحالة الأولى: اختار العميل بالضبط (2 Chaise Longue) وفقط!
+    if (qtyChaise === 2 && qtyTransat === 0) {
+        subtotalEquip += 5000;
+    } 
+    // الحالة الثانية: اختار العميل بالضبط (2 Transat) وفقط!
+    else if (qtyTransat === 2 && qtyChaise === 0) {
+        subtotalEquip += 7000;
+    } 
+    // الحالة الثالثة: حساب عادي بالأسعار الأساسية
+    else {
+        subtotalEquip += (qtyChaise * BASE_PRICES['Chaise Longue']);
+        subtotalEquip += (qtyTransat * BASE_PRICES['Transat en Bois']);
+    }
+
+    // إضافة البالداكين (لا تدخل في العروض)
+    subtotalEquip += (qtyBaldaquin * BASE_PRICES['Baldaquin Royal']);
+
+    // ==========================================
+    // حساب المدة الزمنية والتخفيضات 
+    // ==========================================
+    const durationStr = document.getElementById('edit-duration').value;
+    const duration = parseInt(durationStr) || 1;
+    
+    // الأيام تُضرب في المستلزمات فقط
+    let totalEquip = subtotalEquip * duration;
+    
+    // تطبيق الخصم على المستلزمات فقط (10% لـ 5 أيام، و 15% لأسبوع)
+    if (duration === 5) {
+        totalEquip = totalEquip * 0.90;
+    } else if (duration === 7) {
+        totalEquip = totalEquip * 0.85;
+    }
+    
+    // المجموع النهائي = (سعر المعدات بعد خصم الأيام) + (سعر الأنشطة)
+    const finalTotal = totalEquip + subtotalAct;
+    
+    document.getElementById('edit-total-price').innerText = Math.round(finalTotal).toLocaleString('fr-FR') + ' DA';
+};
+
+export const closeEditModal = () => {
+    const modal = document.getElementById('edit-modal');
+    
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.add('translate-y-4');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300); 
+};
+
+export const saveEditedReservation = async () => {
+    const trackingCode = document.getElementById('edit-modal-code').innerText;
+    const newItems = {};
+
+    document.querySelectorAll('.edit-item-qty').forEach(el => {
+        const qty = parseInt(el.innerText);
+        if (qty > 0) {
+            newItems[el.getAttribute('data-name')] = qty;
+        }
+    });
+
+    const updatedData = {
+        clientName: document.getElementById('edit-name').value,
+        clientPhone: document.getElementById('edit-phone').value,
+        visitDate: document.getElementById('edit-date').value,
+        duration: document.getElementById('edit-duration').value,
+        notes: document.getElementById('edit-notes').value,
+        totalPrice: document.getElementById('edit-total-price').innerText,
+        items: newItems
+    };
+
+    try {
+        await updateReservationData(trackingCode, updatedData);
+        showNotification("Réservation modifiée avec succès !", "success");
+        closeEditModal();
+        renderAdminReservations(true); 
+    } catch (error) {
+        showNotification("Erreur lors de la modification.", "error");
+    }
+};
+
+// ========================================================
+// 7. نظام رسائل الواتساب (WhatsApp) المنسق
 // ========================================================
 export const dispatchWhatsAppMessage = async (trackingCode) => {
     const list = await getAdminReservations();
@@ -268,7 +488,6 @@ export const dispatchWhatsAppMessage = async (trackingCode) => {
     
     if (!res) return showNotification("Réservation introuvable !", "error");
     
-    // تنظيف رقم الهاتف وإضافة رمز الدولة
     let cleanPhone = res.clientPhone.replace(/[^\d+]/g, '');
     if (cleanPhone.startsWith('+')) cleanPhone = cleanPhone.substring(1);
     if (cleanPhone.startsWith('00213')) cleanPhone = cleanPhone.substring(5); 
@@ -279,7 +498,6 @@ export const dispatchWhatsAppMessage = async (trackingCode) => {
     const itemsStr = Object.entries(res.items || {}).map(([name, qty]) => `• ${qty} x ${name}`).join('\n');
     let messageText = "";
 
-    // ترتيب النص لمنع اختلاط اللغتين في الكود
     const arabicGreeting = `مرحباً ${res.clientName}!`;
     const arabicAccepted = `تم تأكيد حجزك في نادي مالديفا الشاطئي ✔️`;
     const arabicDeclined = `نعتذر لعدم تمكننا من قبول حجزك ليوم ${res.visitDate} نظراً لعدم توفر الأماكن.`;
@@ -315,7 +533,7 @@ export const dispatchWhatsAppMessage = async (trackingCode) => {
 };
 
 // ========================================================
-// 7. تصدير الدوال للاستخدام المباشر في HTML
+// 8. تصدير الدوال للاستخدام المباشر في HTML
 // ========================================================
 window.verifyAdminLogin = verifyAdminLogin;
 window.logoutAdmin = logoutAdmin;
@@ -329,3 +547,9 @@ window.setArchiveStatus = setArchiveStatus;
 window.prepareDelete = prepareDelete;
 window.executePendingDelete = executePendingDelete;
 window.dispatchWhatsAppMessage = dispatchWhatsAppMessage;
+
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.updateEditItemQty = updateEditItemQty;
+window.calculateEditTotal = calculateEditTotal;
+window.saveEditedReservation = saveEditedReservation;
