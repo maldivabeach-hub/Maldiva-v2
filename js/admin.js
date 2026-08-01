@@ -1,22 +1,33 @@
 // /js/admin.js
 
-import { initPublicAuth } from './firebase.js'; 
+import { db, appId, signInAdmin, signOutAdmin } from './firebase.js'; 
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAdminReservations, updateReservationData, deleteReservation, toggleDateClosure, getClosedDays } from './reservationService.js';
 import { showNotification, openConfirmModal, closeConfirmModal } from './ui.js';
+import { pricesByName, comboPricing, durationDiscounts, childPricing } from './prices.js';
 
-initPublicAuth();
-
-const BASE_PRICES = {
-    'Chaise Longue': 2000, 'Transat en Bois': 3000, 'Baldaquin Royal': 10000,
-    'Jet-Ski (15 Min)': 6000, 'Jet-Ski (30 Min)': 12000, 'Jet-Ski (1 Heure)': 20000,
-    'Pédalo (30 Min)': 1000, 'Pédalo (1 Heure)': 2000,
-    'Kayak (30 Min)': 1000, 'Kayak (1 Heure)': 2000,
-    'Bouée Tractée (2 pers)': 3000, 'Bouée Tractée (3 pers)': 4000,
-    'Bateau (+4 pers)': 4000,
-    'Chaise longue': 2000, 'Transat': 3000, 'Baldaquin': 10000,
-    'Jet-Ski': 6000, 'Pédalo': 1000, 'Kayak': 1000,
-    'Bouée tractée': 3000, 'Bateau': 4000
+// يتحقق من أن المستخدم المسجل دخوله عبر Firebase Auth موجود فعلاً في مجموعة admins
+// هذا فقط لتجربة الاستخدام (إظهار/إخفاء اللوحة) — التحقق الحقيقي والملزم يكون داخل Firestore Security Rules
+const checkIsAdmin = async (uid) => {
+    const adminDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'admins', uid);
+    const snap = await getDoc(adminDocRef);
+    return snap.exists();
 };
+
+// أسماء قديمة/مختصرة استُخدمت في حجوزات سابقة قبل توحيد التسمية — للتوافق مع البيانات القديمة فقط
+const LEGACY_ALIASES = {
+    'Chaise longue': pricesByName['Chaise Longue'],
+    'Transat': pricesByName['Transat en Bois'],
+    'Baldaquin': pricesByName['Baldaquin Royal'],
+    'Jet-Ski': pricesByName['Jet-Ski (15 Min)'],
+    'Pédalo': pricesByName['Pédalo (30 Min)'],
+    'Kayak': pricesByName['Kayak (30 Min)'],
+    'Bouée tractée': pricesByName['Bouée Tractée (2 pers)'],
+    'Bateau': pricesByName['Bateau (+4 pers)']
+};
+
+// 💰 نفس مصدر الأسعار المستخدم في index.html (prices.js) + الأسماء القديمة أعلاه
+const BASE_PRICES = { ...pricesByName, ...LEGACY_ALIASES };
 
 const STANDARD_ITEMS = [
     'Chaise Longue', 'Transat en Bois', 'Baldaquin Royal', 
@@ -33,12 +44,29 @@ let filterNautique = false;
 let pendingDeleteId = null;
 
 export const verifyAdminLogin = async () => {
+    const email = document.getElementById('admin-email').value.trim();
     const pass = document.getElementById('admin-password').value;
     const error = document.getElementById('admin-login-error');
-    
-    if (pass === 'mhdrb26') {
+    error.classList.add('hidden');
+
+    if (!email || !pass) {
+        error.textContent = "Veuillez entrer votre email et mot de passe.";
+        error.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const userCredential = await signInAdmin(email, pass);
+        const isAdmin = await checkIsAdmin(userCredential.user.uid);
+
+        if (!isAdmin) {
+            await signOutAdmin();
+            error.textContent = "Ce compte n'est pas autorisé à accéder à l'administration.";
+            error.classList.remove('hidden');
+            return;
+        }
+
         adminAuthorized = true;
-        error.classList.add('hidden'); 
         document.getElementById('admin-login-view').classList.add('hidden'); 
         document.getElementById('admin-dashboard-view').classList.remove('hidden');
         
@@ -51,13 +79,17 @@ export const verifyAdminLogin = async () => {
 
         await renderAdminReservations(true); 
         await renderClosedDays(); 
-    } else { 
-        error.classList.remove('hidden'); 
+    } catch (err) {
+        console.error("Erreur connexion admin:", err);
+        error.textContent = "Email ou mot de passe incorrect.";
+        error.classList.remove('hidden');
     }
 };
 
-export const logoutAdmin = () => {
+export const logoutAdmin = async () => {
     adminAuthorized = false;
+    await signOutAdmin();
+    document.getElementById('admin-email').value = '';
     document.getElementById('admin-password').value = ''; 
     document.getElementById('admin-login-view').classList.remove('hidden'); 
     document.getElementById('admin-dashboard-view').classList.add('hidden'); 
@@ -178,6 +210,9 @@ export const renderAdminReservations = async (forceRefresh = false) => {
         let itemsHTML = '';
         for (let [name, qty] of Object.entries(res.items || {})) {
             itemsHTML += `<span class="bg-teal-50 text-teal-800 text-[10px] px-2 py-0.5 rounded border border-teal-100 font-semibold mb-1 mr-1 inline-block">${qty} x ${name}</span> `;
+        }
+        if (res.childrenChaiseCount > 0) {
+            itemsHTML += `<span class="bg-purple-50 text-purple-700 text-[10px] px-2 py-0.5 rounded border border-purple-200 font-semibold mb-1 mr-1 inline-block"><i class="fa-solid fa-child-reaching"></i> ${res.childrenChaiseCount} enfant(s) sur Chaise Longue (-${childPricing.childWithChairDiscount * 100}%)</span> `;
         }
         
         const statusStyles = { 
@@ -312,6 +347,20 @@ export const openEditModal = async (trackingCode) => {
                 </div>
             </div>
         `;
+
+        if (item === 'Chaise Longue') {
+            const childQty = Math.min(res.childrenChaiseCount || 0, currentQty);
+            itemsHTML += `
+                <div class="flex justify-between items-center bg-purple-50 p-2 rounded-xl border border-purple-100 ml-4">
+                    <span class="text-[11px] font-semibold text-purple-600"><i class="fa-solid fa-child-reaching mr-1"></i>Dont enfants (-40%)</span>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="window.updateEditChildChaise(-1)" class="w-5 h-5 bg-white rounded-full text-purple-700 font-bold text-[10px] flex items-center justify-center shadow-sm">-</button>
+                        <span id="edit-qty-chaise-enfant" class="text-[10px] font-bold w-4 text-center text-purple-700">${childQty}</span>
+                        <button type="button" onclick="window.updateEditChildChaise(1)" class="w-5 h-5 bg-white rounded-full text-purple-700 font-bold text-[10px] flex items-center justify-center shadow-sm">+</button>
+                    </div>
+                </div>
+            `;
+        }
     });
 
     document.getElementById('edit-items-container').innerHTML = itemsHTML;
@@ -330,8 +379,30 @@ export const updateEditItemQty = (id, change) => {
         let newQty = parseInt(el.innerText) + change;
         if (newQty < 0) newQty = 0;
         el.innerText = newQty;
+
+        // إذا نقصت "Chaise Longue" عن عدد الأطفال المسجلين عليها، نصحح عدد الأطفال تلقائياً
+        if (el.getAttribute('data-name') === 'Chaise Longue') {
+            const childSpan = document.getElementById('edit-qty-chaise-enfant');
+            if (childSpan && parseInt(childSpan.innerText) > newQty) {
+                childSpan.innerText = newQty;
+            }
+        }
+
         calculateEditTotal(); 
     }
+};
+
+// عداد "عدد الأطفال" من ضمن كراسي الاستلقاء في نافذة التعديل (لا يتجاوز عدد Chaise Longue)
+export const updateEditChildChaise = (change) => {
+    const span = document.getElementById('edit-qty-chaise-enfant');
+    const chaiseSpan = document.querySelector('.edit-item-qty[data-name="Chaise Longue"]');
+    if (!span || !chaiseSpan) return;
+    const maxAllowed = parseInt(chaiseSpan.innerText) || 0;
+    let current = parseInt(span.innerText) + change;
+    if (current < 0) current = 0;
+    if (current > maxAllowed) current = maxAllowed;
+    span.innerText = current;
+    calculateEditTotal();
 };
 
 export const calculateEditTotal = () => {
@@ -347,10 +418,31 @@ export const calculateEditTotal = () => {
         else subtotalAct += qty * (BASE_PRICES[name] || 0);
     });
 
-    if (qtyChaise === 2 && qtyTransat === 0) subtotalEquip += 5000;
-    else if (qtyTransat === 2 && qtyChaise === 0) subtotalEquip += 7000;
+    const qtyChaiseEnfant = Math.min(parseInt(document.getElementById('edit-qty-chaise-enfant')?.innerText || 0), qtyChaise);
+    // خصم ثابت لكل طفل = 40% من سعر الكرسي الواحد، يُطبّق سواء بالسعر الفردي أو ضمن عرض الكومبو (نفس منطق reservation.js)
+    const childRebate = BASE_PRICES['Chaise Longue'] * childPricing.childWithChairDiscount;
+
+    if (qtyChaise === 2 && qtyTransat === 0) {
+        let comboTotal = comboPricing.chaiseOnly2;
+        if (qtyChaiseEnfant > 0) comboTotal -= (qtyChaiseEnfant * childRebate);
+        subtotalEquip += comboTotal;
+    }
+    else if (qtyTransat === 2 && qtyChaise === 0) {
+        subtotalEquip += comboPricing.transatOnly2;
+    }
+    else if (qtyChaise === 1 && qtyTransat === 0) {
+        // كرسي استلقاء واحد بمفرده يحتاج مظلة وطاولة خاصة به
+        let soloTotal = BASE_PRICES['Chaise Longue'] + comboPricing.parasolTable;
+        if (qtyChaiseEnfant > 0) soloTotal -= (qtyChaiseEnfant * childRebate);
+        subtotalEquip += soloTotal;
+    }
+    else if (qtyTransat === 1 && qtyChaise === 0) {
+        // ترانزا واحد بمفرده يحتاج مظلة وطاولة خاصة به
+        subtotalEquip += BASE_PRICES['Transat en Bois'] + comboPricing.parasolTable;
+    }
     else {
         subtotalEquip += (qtyChaise * BASE_PRICES['Chaise Longue']);
+        if (qtyChaiseEnfant > 0) subtotalEquip -= (qtyChaiseEnfant * childRebate);
         subtotalEquip += (qtyTransat * BASE_PRICES['Transat en Bois']);
     }
 
@@ -359,8 +451,7 @@ export const calculateEditTotal = () => {
     const duration = parseInt(document.getElementById('edit-duration').value) || 1;
     let totalEquip = subtotalEquip * duration;
     
-    if (duration === 5) totalEquip = totalEquip * 0.90;
-    else if (duration === 7) totalEquip = totalEquip * 0.85;
+    if (durationDiscounts[duration]) totalEquip *= (1 - durationDiscounts[duration]);
     
     const finalTotal = totalEquip + subtotalAct;
     document.getElementById('edit-total-price').innerText = Math.round(finalTotal).toLocaleString('fr-FR') + ' DA';
@@ -382,6 +473,9 @@ export const saveEditedReservation = async () => {
         if (qty > 0) newItems[el.getAttribute('data-name')] = qty;
     });
 
+    const qtyChaiseInEdit = parseInt(document.querySelector('.edit-item-qty[data-name="Chaise Longue"]')?.innerText || 0);
+    const childrenChaiseCount = Math.min(parseInt(document.getElementById('edit-qty-chaise-enfant')?.innerText || 0), qtyChaiseInEdit);
+
     const updatedData = {
         clientName: document.getElementById('edit-name').value,
         clientPhone: document.getElementById('edit-phone').value,
@@ -389,7 +483,8 @@ export const saveEditedReservation = async () => {
         duration: document.getElementById('edit-duration').value,
         notes: document.getElementById('edit-notes').value,
         totalPrice: document.getElementById('edit-total-price').innerText,
-        items: newItems
+        items: newItems,
+        childrenChaiseCount: childrenChaiseCount
     };
 
     try {
@@ -441,6 +536,9 @@ export const printReservation = async (trackingCode) => {
     } else {
         itemsHTML = '<tr><td colspan="2" class="p-3 text-center text-gray-500">Aucun service</td></tr>';
     }
+    if (res.childrenChaiseCount > 0) {
+        itemsHTML += `<tr class="border-b border-gray-200 bg-purple-50"><td class="p-3 border-r border-gray-200 font-semibold text-purple-700"><i class="fa-solid fa-child-reaching"></i> Dont Enfants sur Chaise Longue (-${childPricing.childWithChairDiscount * 100}%)</td><td class="p-3 text-center font-bold text-lg text-purple-700">${res.childrenChaiseCount}</td></tr>`;
+    }
     document.getElementById('print-items-body').innerHTML = itemsHTML;
     document.getElementById('print-total').innerText = res.totalPrice || '0 DA';
 
@@ -471,7 +569,10 @@ export const dispatchWhatsAppMessage = async (trackingCode) => {
     if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1); 
     cleanPhone = '213' + cleanPhone;
 
-    const itemsStr = Object.entries(res.items || {}).map(([name, qty]) => `• ${qty} x ${name}`).join('\n');
+    let itemsStr = Object.entries(res.items || {}).map(([name, qty]) => `• ${qty} x ${name}`).join('\n');
+    if (res.childrenChaiseCount > 0) {
+        itemsStr += `\n• ${res.childrenChaiseCount} enfant(s) sur Chaise Longue (-${childPricing.childWithChairDiscount * 100}%)`;
+    }
     let messageText = "";
 
     if (res.status === 'approved') {
@@ -537,6 +638,7 @@ window.dispatchWhatsAppMessage = dispatchWhatsAppMessage;
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.updateEditItemQty = updateEditItemQty;
+window.updateEditChildChaise = updateEditChildChaise;
 window.calculateEditTotal = calculateEditTotal;
 window.saveEditedReservation = saveEditedReservation;
 window.printReservation = printReservation;
